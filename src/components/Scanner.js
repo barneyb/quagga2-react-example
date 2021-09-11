@@ -1,6 +1,9 @@
-import React, { useCallback, useLayoutEffect } from 'react';
-import PropTypes from 'prop-types';
 import Quagga from '@ericblade/quagga2';
+import PropTypes from 'prop-types';
+import React, {
+    useCallback,
+    useLayoutEffect,
+} from 'react';
 
 function getMedian(arr) {
     arr.sort((a, b) => a - b);
@@ -32,6 +35,7 @@ const defaultDecoders = ['ean_reader'];
 const Scanner = ({
     onDetected,
     scannerRef,
+    onProcessed,
     onScannerReady,
     cameraId,
     facingMode,
@@ -46,19 +50,17 @@ const Scanner = ({
             return;
         }
         const err = getMedianOfCodeErrors(result.codeResult.decodedCodes);
-        // if Quagga is at least 75% certain that it read correctly, then accept the code.
-        if (err < 0.25) {
-            onDetected(result.codeResult.code);
-        }
+        onDetected(result.codeResult.code, err);
     }, [onDetected]);
 
     const handleProcessed = (result) => {
         const drawingCtx = Quagga.canvas.ctx.overlay;
         const drawingCanvas = Quagga.canvas.dom.overlay;
-        drawingCtx.font = "24px Arial";
-        drawingCtx.fillStyle = 'green';
+        // drawingCtx.font = "24px Arial";
+        // drawingCtx.fillStyle = 'green';
 
         if (result) {
+            onProcessed && onProcessed(result);
             // console.warn('* quagga onProcessed', result);
             if (result.boxes) {
                 drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute('width')), parseInt(drawingCanvas.getAttribute('height')));
@@ -69,18 +71,20 @@ const Scanner = ({
             if (result.box) {
                 Quagga.ImageDebug.drawPath(result.box, { x: 0, y: 1 }, drawingCtx, { color: 'blue', lineWidth: 2 });
             }
-            if (result.codeResult && result.codeResult.code) {
-                // const validated = barcodeValidator(result.codeResult.code);
-                // const validated = validateBarcode(result.codeResult.code);
-                // Quagga.ImageDebug.drawPath(result.line, { x: 'x', y: 'y' }, drawingCtx, { color: validated ? 'green' : 'red', lineWidth: 3 });
-                drawingCtx.font = "24px Arial";
-                // drawingCtx.fillStyle = validated ? 'green' : 'red';
-                // drawingCtx.fillText(`${result.codeResult.code} valid: ${validated}`, 10, 50);
-                drawingCtx.fillText(result.codeResult.code, 10, 20);
-                // if (validated) {
-                //     onDetected(result);
-                // }
-            }
+            // if (result.codeResult && result.codeResult.code) {
+            //     const code = result.codeResult.code;
+            //     const validated = validate(code, "upc").valid;
+            //     // const validated = barcodeValidator(result.codeResult.code);
+            //     // const validated = validateBarcode(result.codeResult.code);
+            //     Quagga.ImageDebug.drawPath(result.line, { x: 'x', y: 'y' }, drawingCtx, { color: validated ? 'green' : 'red', lineWidth: 3 });
+            //     drawingCtx.font = "24px Arial";
+            //     // drawingCtx.fillStyle = validated ? 'green' : 'red';
+            //     // drawingCtx.fillText(`${result.codeResult.code} valid: ${validated}`, 10, 50);
+            //     drawingCtx.fillText(code, 10, 20);
+            //     // if (validated) {
+            //     //     onDetected(result);
+            //     // }
+            // }
         }
     };
 
@@ -93,6 +97,12 @@ const Scanner = ({
                     ...(cameraId && { deviceId: cameraId }),
                     ...(!cameraId && { facingMode }),
                 },
+                area: { // defines rectangle of the detection/localization area
+                    top: "10%",
+                    right: "15%",
+                    left: "15%",
+                    bottom: "10%",
+                },
                 target: scannerRef.current,
             },
             locator,
@@ -100,7 +110,7 @@ const Scanner = ({
             decoder: { readers: decoders },
             locate,
         }, (err) => {
-            Quagga.onProcessed(handleProcessed);
+            // Quagga.onProcessed(handleProcessed);
 
             if (err) {
                 return console.log('Error starting Quagga:', err);
@@ -118,7 +128,7 @@ const Scanner = ({
             Quagga.offProcessed(handleProcessed);
             Quagga.stop();
         };
-    }, [cameraId, onDetected, onScannerReady, scannerRef, errorCheck, constraints, locator, decoders, locate]);
+    }, [cameraId, onScannerReady, scannerRef.current, errorCheck, constraints, locator, decoders, locate]);
     return null;
 }
 

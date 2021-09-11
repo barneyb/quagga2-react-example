@@ -24,10 +24,11 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@ericblade/quagga2": "^1.0.6",
+    "@ericblade/barcode-validator": "^2.4.1",
+    "@ericblade/quagga2": "^1.4.2",
+    "prop-types": "^15.7.2",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
-    "prop-types": "^15.7.2",
     "snyk": "^1.334.0"
   },
   "devDependencies": {
